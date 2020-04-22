@@ -1,0 +1,1 @@
+A Remote Procedure Call implementation program, which use the client-server architecture to call (from a client to a server) a routine which is actually a microservice.
