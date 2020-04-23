@@ -7,24 +7,42 @@ import (
 	"net/rpc"
 )
 
-var students = make(map[string]map[string]float32)
-var subjects = make(map[string]map[string]float32)
+//Data is...
+type Data struct {
+	Student string
+	Subject string
+	Score   float32
+}
 
 //Server is...
 type Server struct{}
 
+var students = make(map[string]map[string]float32)
+var subjects = make(map[string]map[string]float32)
+var scholarData Data
+
 //AddNewScore is...
-func (server *Server) AddNewScore(name string, subject string, score float32) error {
-	if _, exists := subjects[subject][name]; !exists {
-		students[name][subject] = score
-		subjects[subject][name] = score
+func (this *Server) AddNewScore(data Data, reply *string) error {
+	if _, exists := subjects[data.Subject]; !exists {
+		subjects[data.Subject] = make(map[string]float32)
+	}
+
+	if _, exists := students[data.Student]; !exists {
+		students[data.Student] = make(map[string]float32)
+	}
+
+	if _, exists := subjects[data.Subject][data.Student]; !exists {
+		students[data.Student][data.Subject] = data.Score
+		subjects[data.Subject][data.Student] = data.Score
+		*reply = "Calificación agregada!"
 		return nil
 	} else {
-		return errors.New("Score already captured")
+		return errors.New("Error: calificación existente")
 	}
 }
 
-func (server *Server) getStudentAverage(name string, reply *float32) error {
+//GetStudentAverage is...
+func (this *Server) GetStudentAverage(name string, reply *float32) error {
 	if _, exists := students[name]; exists {
 		var average float32 = 0
 
@@ -32,34 +50,34 @@ func (server *Server) getStudentAverage(name string, reply *float32) error {
 			average += v
 		}
 
-		average /= (float32)(len(students[name]))
+		average /= float32(len(students[name]))
 		*reply = average
 	}
 	return nil
 }
 
-func (server *Server) getAllStudentsAverage(reply *float32) error {
+//GetAllStudentsAverage is...
+func (this *Server) GetAllStudentsAverage(data float32, reply *float32) error {
 	if len(students) > 0 {
-		var studentAverage float32 = 0
-		var totalAverage float32 = 0
+		var scoreSum float32 = 0
+		var totalScores float32 = 0
 
 		for _, value := range students {
 			for _, v := range value {
-				studentAverage += v
+				scoreSum += v
 			}
 
-			studentAverage /= (float32)(len(value))
-			totalAverage += studentAverage
-			studentAverage = 0
+			totalScores += float32(len(value))
 		}
 
-		totalAverage /= (float32)(len(students))
-		*reply = totalAverage
+		scoreSum /= totalScores
+		*reply = scoreSum
 	}
 	return nil
 }
 
-func (server *Server) getSubjectAverage(subject string, reply *float32) error {
+//GetSubjectAverage is...
+func (this *Server) GetSubjectAverage(subject string, reply *float32) error {
 	if _, exists := subjects[subject]; exists {
 		var average float32 = 0
 
@@ -67,25 +85,26 @@ func (server *Server) getSubjectAverage(subject string, reply *float32) error {
 			average += v
 		}
 
-		average /= (float32)(len(subjects[subject]))
+		average /= float32(len(subjects[subject]))
 		*reply = average
 	}
 	return nil
 }
 
 func runServer() {
+	fmt.Println("Servidor corriendo...")
 	rpc.Register(new(Server))
-	ln, err := net.Listen("tcp", "127.0.0.1:9000")
+	listener, err := net.Listen("tcp", "127.0.0.1:9000")
 	if err != nil {
 		fmt.Println(err)
 	}
 	for {
-		c, err := ln.Accept()
+		connection, err := listener.Accept()
 		if err != nil {
 			fmt.Println(err)
 			continue
 		}
-		go rpc.ServeConn(c)
+		go rpc.ServeConn(connection)
 	}
 }
 
