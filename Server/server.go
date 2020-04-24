@@ -59,19 +59,21 @@ func (this *Server) GetStudentAverage(name string, reply *float32) error {
 //GetAllStudentsAverage is...
 func (this *Server) GetAllStudentsAverage(data float32, reply *float32) error {
 	if len(students) > 0 {
-		var scoreSum float32 = 0
-		var totalScores float32 = 0
+		var studentAverage float32 = 0
+		var totalAverage float32 = 0
 
 		for _, value := range students {
 			for _, v := range value {
-				scoreSum += v
+				studentAverage += v
 			}
 
-			totalScores += float32(len(value))
+			studentAverage /= (float32)(len(value))
+			totalAverage += studentAverage
+			studentAverage = 0
 		}
 
-		scoreSum /= totalScores
-		*reply = scoreSum
+		totalAverage /= (float32)(len(students))
+		*reply = totalAverage
 	}
 	return nil
 }
